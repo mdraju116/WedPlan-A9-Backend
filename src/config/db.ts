@@ -16,6 +16,7 @@ export async function connectDB() {
     console.log("Successfully connected to MongoDB!");
 
     return client.db("wedplan-db1");
+    
   } catch (error) {
     console.error("MongoDB connection failed:", error);
     throw error;
