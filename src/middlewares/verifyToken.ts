@@ -1,8 +1,9 @@
 
 import type { Request, Response, NextFunction } from "express";
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { ObjectId } from "mongodb";
+import { getDB } from "../config/db.js";
 
-// const BETTER_AUTH_URL = process.env.BETTER_AUTH_URL;
 const frontendURL =
     process.env.NODE_ENV === "production"
         ? process.env.FRONTEND_URL_VERCEL
@@ -16,7 +17,11 @@ const JWKS = createRemoteJWKSet(
     new URL(`${frontendURL}/api/auth/jwks`)
 );
 
-export async function verifyToken(req: Request, res: Response, next: NextFunction) {
+export async function verifyToken(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
     const authHeader = req.headers.authorization;
 
     if (!authHeader?.startsWith("Bearer ")) {
@@ -41,8 +46,34 @@ export async function verifyToken(req: Request, res: Response, next: NextFunctio
             });
         }
 
-        // JWT verified successfully.
-        // We'll retrieve the user from MongoDB next.
+        const db = getDB();
+
+        const user = await db.collection("user").findOne({
+            // _id: payload.sub
+            _id: new ObjectId(payload.sub),
+        });
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        if (user.isBlocked) {
+            return res.status(403).json({
+                success: false,
+                message: "Your account has been blocked",
+            });
+        }
+
+        req.user = {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            isBlocked: user.isBlocked,
+        };
 
         next();
     } catch (error) {
