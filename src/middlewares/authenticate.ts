@@ -17,6 +17,7 @@ const JWKS = createRemoteJWKSet(
     new URL(`${frontendURL}/api/auth/jwks`)
 );
 
+// Express middleware function
 export async function verifyToken(
     req: Request,
     res: Response,
