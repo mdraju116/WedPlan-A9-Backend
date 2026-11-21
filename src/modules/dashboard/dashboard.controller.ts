@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { getCustomerDashboard } from "./dashboard.service.js";
 import { getVendorDashboard } from "./dashboard.service.js";
-
+import { getAdminDashboard } from "./dashboard.service.js";
 
 
 export async function getCustomerDashboardController(
@@ -38,6 +38,25 @@ export async function getVendorDashboardController(
         res.status(200).json({
             success: true,
             message: "Vendor dashboard retrieved successfully",
+            data: dashboard,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// Admin Dashboard Overview
+export async function getAdminDashboardController(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const dashboard = await getAdminDashboard();
+
+        res.status(200).json({
+            success: true,
+            message: "Admin dashboard retrieved successfully",
             data: dashboard,
         });
     } catch (error) {

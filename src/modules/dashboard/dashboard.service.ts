@@ -80,3 +80,47 @@ export async function getVendorDashboard(vendorId: string) {
         recentBookings,
     };
 }
+
+
+// Admin Dashboard Overview
+export async function getAdminDashboard() {
+    const db = getDB();
+
+    const users = db.collection("user");
+    const services = db.collection("services");
+    const bookings = db.collection("bookings");
+    const transactions = db.collection("transactions");
+
+    const [
+        totalUsers,
+        totalCustomers,
+        totalVendors,
+        totalServices,
+        totalBookings,
+        totalTransactions,
+        recentBookings,
+    ] = await Promise.all([
+        users.countDocuments({}),
+        users.countDocuments({ role: "Customer" }),
+        users.countDocuments({ role: "Vendor" }),
+        services.countDocuments({}),
+        bookings.countDocuments({}),
+        transactions.countDocuments({}),
+        bookings.find({})
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .toArray(),
+    ]);
+
+    return {
+        stats: {
+            totalUsers,
+            totalCustomers,
+            totalVendors,
+            totalServices,
+            totalBookings,
+            totalTransactions,
+        },
+        recentBookings,
+    };
+}

@@ -3,7 +3,7 @@ import { verifyToken } from "../../middlewares/authenticate.js";
 import { authorize } from "../../middlewares/authorize.js";
 import { getCustomerDashboardController } from "./dashboard.controller.js";
 import { getVendorDashboardController } from "./dashboard.controller.js";
-
+import { getAdminDashboardController } from "./dashboard.controller.js";
 
 const router = Router();
 
@@ -20,5 +20,13 @@ router.get(
     authorize("Vendor"),
     getVendorDashboardController
 );
+
+router.get(
+    "/admin",
+    verifyToken,
+    authorize("Admin"),
+    getAdminDashboardController
+);
+
 
 export default router;
