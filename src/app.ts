@@ -6,7 +6,7 @@ import { notFound } from "./middlewares/notFound.js";
 
 import userRoutes from "./modules/user/user.routes.js";
 import serviceRoutes from "./modules/service/service.routes.js";
-
+import bookingRoutes from "./modules/booking/booking.routes.js";
 
 
 const app = express();
@@ -25,11 +25,11 @@ app.get("/", (req, res) => {
   res.send("Welcome to WedPlan Server!");
 });
 
-//http://localhost:5000/api/users/profile
+//http://localhost:5000/api/users
 app.use("/api/users", userRoutes);
-
-//http://localhost:5000/api/services
 app.use("/api/services", serviceRoutes);
+app.use("/api/bookings", bookingRoutes);
+
 
 
 app.use(notFound);
