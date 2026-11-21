@@ -52,3 +52,47 @@ export async function getSingleService(serviceId: ObjectId) {
     return service;
 }
 
+
+export async function updateService(
+    serviceId: ObjectId,
+    vendorId: string,
+    updateData: {
+        title?: string;
+        category?: string;
+        price?: number;
+        description?: string;
+        image?: string;
+    }
+) {
+    const db = getDB();
+
+    const result = await db.collection("services").updateOne(
+        {
+            _id: serviceId,
+            vendorId,
+        },
+        {
+            $set: {
+                ...updateData,
+                updatedAt: new Date(),
+            },
+        }
+    );
+
+    return result;
+}
+
+
+export async function deleteService(
+    serviceId: ObjectId,
+    vendorId: string
+) {
+    const db = getDB();
+
+    const result = await db.collection("services").deleteOne({
+        _id: serviceId,
+        vendorId,
+    });
+
+    return result;
+}

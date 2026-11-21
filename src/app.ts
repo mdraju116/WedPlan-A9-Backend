@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
 //http://localhost:5000/api/users/profile
 app.use("/api/users", userRoutes);
 
-
+//http://localhost:5000/api/services
 app.use("/api/services", serviceRoutes);
 
 
