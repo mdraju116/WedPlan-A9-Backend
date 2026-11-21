@@ -8,7 +8,7 @@ import {
     updateBookingStatusController,
     cancelBookingController,
     getAllBookingsController,
-     adminUpdateBookingStatusController,
+    adminUpdateBookingStatusController,
 } from "./booking.controller.js";
 
 const router = Router();

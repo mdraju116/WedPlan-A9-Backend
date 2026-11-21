@@ -7,7 +7,7 @@ import { notFound } from "./middlewares/notFound.js";
 import userRoutes from "./modules/user/user.routes.js";
 import serviceRoutes from "./modules/service/service.routes.js";
 import bookingRoutes from "./modules/booking/booking.routes.js";
-
+import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
 
 const app = express();
 
@@ -29,7 +29,7 @@ app.get("/", (req, res) => {
 app.use("/api/users", userRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
-
+app.use("/api/dashboard", dashboardRoutes);
 
 
 app.use(notFound);
