@@ -1,14 +1,16 @@
 import type { Request, Response, NextFunction } from "express";
-import { createService } from "./service.service.js";
-import { getAllServices } from "./service.service.js";
 import { ObjectId } from "mongodb";
-import { getSingleService } from "./service.service.js";
-import { updateService } from "./service.service.js";
-import { deleteService } from "./service.service.js";
+import {
+    createService,
+    getAllServices,
+    getAllServicesForAdmin,
+    getSingleService,
+    updateService,
+    deleteService,
+    updateServiceStatus,
+} from "./service.service.js";
 
-
-
-
+// Create Service
 export async function createServiceController(
     req: Request,
     res: Response,
@@ -44,7 +46,7 @@ export async function createServiceController(
     }
 }
 
-
+// Get All Active Services (Public)
 export async function getServices(
     req: Request,
     res: Response,
@@ -63,6 +65,26 @@ export async function getServices(
     }
 }
 
+// Get All Services (Admin)
+export async function getAllServicesAdmin(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const services = await getAllServicesForAdmin();
+
+        res.status(200).json({
+            success: true,
+            message: "All services retrieved successfully",
+            data: services,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// Get Single Active Service
 export async function getService(
     req: Request,
     res: Response,
@@ -97,6 +119,7 @@ export async function getService(
     }
 }
 
+// Update Own Service
 export async function updateServiceController(
     req: Request,
     res: Response,
@@ -104,6 +127,7 @@ export async function updateServiceController(
 ) {
     try {
         const id = req.params.id;
+        const { title, category, price, description, image } = req.body;
 
         if (typeof id !== "string" || !ObjectId.isValid(id)) {
             return res.status(400).json({
@@ -111,8 +135,6 @@ export async function updateServiceController(
                 message: "Invalid service ID",
             });
         }
-
-        const { title, category, price, description, image } = req.body;
 
         const updateData = {
             ...(title !== undefined && { title }),
@@ -151,6 +173,7 @@ export async function updateServiceController(
     }
 }
 
+// Delete Own Service
 export async function deleteServiceController(
     req: Request,
     res: Response,
@@ -181,6 +204,51 @@ export async function deleteServiceController(
         res.status(200).json({
             success: true,
             message: "Service deleted successfully",
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// Admin Update Service Status
+export async function updateServiceStatusController(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const id = req.params.id;
+        const { status } = req.body;
+
+        if (typeof id !== "string" || !ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid service ID",
+            });
+        }
+
+        if (status !== "Active" && status !== "Inactive") {
+            return res.status(400).json({
+                success: false,
+                message: "Status must be Active or Inactive",
+            });
+        }
+
+        const result = await updateServiceStatus(
+            new ObjectId(id),
+            status
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Service not found",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Service status updated to ${status}`,
         });
     } catch (error) {
         next(error);

@@ -1,18 +1,26 @@
 import { Router } from "express";
 import { verifyToken } from "../../middlewares/authenticate.js";
 import { authorize } from "../../middlewares/authorize.js";
-import { createServiceController,getServices,getService,
-    updateServiceController,deleteServiceController,
- } from "./service.controller.js";
-
+import {
+    createServiceController,
+    getServices,
+    getAllServicesAdmin,
+    getService,
+    updateServiceController,
+    deleteServiceController,
+    updateServiceStatusController,
+} from "./service.controller.js";
 
 const router = Router();
 
-router.post( "/", verifyToken,authorize("Vendor"), createServiceController);
-router.get("/", getServices);
-router.get("/:id", getService);
-router.patch("/:id",verifyToken,authorize("Vendor"),updateServiceController);
-router.delete( "/:id", verifyToken,authorize("Vendor"), deleteServiceController);
+router.post("/", verifyToken, authorize("Vendor"), createServiceController);
 
+router.get("/", getServices);
+router.get("/admin/all", verifyToken, authorize("Admin"), getAllServicesAdmin);
+router.get("/:id", getService);
+
+router.patch("/:id", verifyToken, authorize("Vendor"), updateServiceController);
+router.delete("/:id", verifyToken, authorize("Vendor"), deleteServiceController);
+router.patch("/:id/status", verifyToken, authorize("Admin"), updateServiceStatusController);
 
 export default router;

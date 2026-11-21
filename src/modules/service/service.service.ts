@@ -1,7 +1,7 @@
-import { getDB } from "../../config/db.js";
 import { ObjectId } from "mongodb";
+import { getDB } from "../../config/db.js";
 
-
+// Create Service
 export async function createService(serviceData: {
     title: string;
     category: string;
@@ -23,36 +23,40 @@ export async function createService(serviceData: {
 
     const result = await db.collection("services").insertOne(service);
 
-    return {
-        _id: result.insertedId,
-        ...service,
-    };
+    return { _id: result.insertedId, ...service };
 }
 
-
+// Get All Active Services (Public)
 export async function getAllServices() {
     const db = getDB();
 
-    const services = await db.collection("services")
+    return await db.collection("services")
         .find({ status: "Active" })
         .sort({ createdAt: -1 })
         .toArray();
-
-    return services;
 }
 
+// Get All Services (Admin)
+export async function getAllServicesForAdmin() {
+    const db = getDB();
+
+    return await db.collection("services")
+        .find({})
+        .sort({ createdAt: -1 })
+        .toArray();
+}
+
+// Get Single Active Service
 export async function getSingleService(serviceId: ObjectId) {
     const db = getDB();
 
-    const service = await db.collection("services").findOne({
+    return await db.collection("services").findOne({
         _id: serviceId,
         status: "Active",
     });
-
-    return service;
 }
 
-
+// Update Own Service
 export async function updateService(
     serviceId: ObjectId,
     vendorId: string,
@@ -66,33 +70,34 @@ export async function updateService(
 ) {
     const db = getDB();
 
-    const result = await db.collection("services").updateOne(
-        {
-            _id: serviceId,
-            vendorId,
-        },
-        {
-            $set: {
-                ...updateData,
-                updatedAt: new Date(),
-            },
-        }
+    return await db.collection("services").updateOne(
+        { _id: serviceId, vendorId },
+        { $set: { ...updateData, updatedAt: new Date() } }
     );
-
-    return result;
 }
 
-
+// Delete Own Service
 export async function deleteService(
     serviceId: ObjectId,
     vendorId: string
 ) {
     const db = getDB();
 
-    const result = await db.collection("services").deleteOne({
+    return await db.collection("services").deleteOne({
         _id: serviceId,
         vendorId,
     });
+}
 
-    return result;
+// Admin Update Service Status
+export async function updateServiceStatus(
+    serviceId: ObjectId,
+    status: "Active" | "Inactive"
+) {
+    const db = getDB();
+
+    return await db.collection("services").updateOne(
+        { _id: serviceId },
+        { $set: { status, updatedAt: new Date() } }
+    );
 }
