@@ -1,7 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
 import { ObjectId } from "mongodb";
-import { createBooking } from "./booking.service.js";
+import {
+    createBooking,
+    getMyBookings,
+    getVendorBookingRequests,
+} from "./booking.service.js";
 
+// Create Booking
 export async function createBookingController(
     req: Request,
     res: Response,
@@ -43,6 +48,48 @@ export async function createBookingController(
             success: true,
             message: "Booking created successfully",
             data: booking,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// Get My Bookings
+export async function getMyBookingsController(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const bookings = await getMyBookings(
+            req.user!.id.toString()
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "My bookings retrieved successfully",
+            data: bookings,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// Get Vendor Booking Requests
+export async function getVendorBookingRequestsController(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const bookings = await getVendorBookingRequests(
+            req.user!.id.toString()
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Booking requests retrieved successfully",
+            data: bookings,
         });
     } catch (error) {
         next(error);
