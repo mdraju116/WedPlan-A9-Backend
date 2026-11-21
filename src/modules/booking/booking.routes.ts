@@ -5,6 +5,9 @@ import {
     createBookingController,
     getMyBookingsController,
     getVendorBookingRequestsController,
+    updateBookingStatusController,
+    cancelBookingController,
+    getAllBookingsController,
 } from "./booking.controller.js";
 
 const router = Router();
@@ -33,4 +36,24 @@ router.get(
     getVendorBookingRequestsController
 );
 
+router.patch(
+    "/:id/status",
+    verifyToken,
+    authorize("Vendor"),
+    updateBookingStatusController
+);
+
+router.patch(
+    "/:id/cancel",
+    verifyToken,
+    authorize("Customer"),
+    cancelBookingController
+);
+
+router.get(
+    "/admin/all",
+    verifyToken,
+    authorize("Admin"),
+    getAllBookingsController
+);
 export default router;

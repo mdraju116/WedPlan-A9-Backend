@@ -67,3 +67,58 @@ export async function getVendorBookingRequests(vendorId: string) {
         .sort({ createdAt: -1 })
         .toArray();
 }
+
+// Update Booking Status (Vendor)
+export async function updateBookingStatus(
+    bookingId: ObjectId,
+    vendorId: string,
+    status: "Confirmed" | "Rejected"
+) {
+    const db = getDB();
+
+    return await db.collection("bookings").updateOne(
+        {
+            _id: bookingId,
+            vendorId,
+            status: "Pending",
+        },
+        {
+            $set: {
+                status,
+                updatedAt: new Date(),
+            },
+        }
+    );
+}
+
+// Cancel Booking (Customer)
+export async function cancelBooking(
+    bookingId: ObjectId,
+    customerId: string
+) {
+    const db = getDB();
+
+    return await db.collection("bookings").updateOne(
+        {
+            _id: bookingId,
+            customerId,
+            status: "Pending",
+        },
+        {
+            $set: {
+                status: "Cancelled",
+                updatedAt: new Date(),
+            },
+        }
+    );
+}
+
+// Get All Bookings (Admin)
+export async function getAllBookings() {
+    const db = getDB();
+
+    return await db.collection("bookings")
+        .find({})
+        .sort({ createdAt: -1 })
+        .toArray();
+}
