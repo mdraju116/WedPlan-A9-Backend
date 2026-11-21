@@ -8,6 +8,7 @@ import {
     updateService,
     deleteService,
     updateServiceStatus,
+    getMyServicesForVendor,
 } from "./service.service.js";
 
 // Create Service
@@ -77,6 +78,27 @@ export async function getAllServicesAdmin(
         res.status(200).json({
             success: true,
             message: "All services retrieved successfully",
+            data: services,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// Get Own Services (Vendor)
+export async function getMyServices(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const services = await getMyServicesForVendor(
+            req.user!.id.toString()
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Vendor services retrieved successfully",
             data: services,
         });
     } catch (error) {

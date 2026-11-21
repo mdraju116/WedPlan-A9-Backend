@@ -9,6 +9,7 @@ import {
     updateServiceController,
     deleteServiceController,
     updateServiceStatusController,
+    getMyServices,
 } from "./service.controller.js";
 
 const router = Router();
@@ -17,6 +18,7 @@ router.post("/", verifyToken, authorize("Vendor"), createServiceController);
 
 router.get("/", getServices);
 router.get("/admin/all", verifyToken, authorize("Admin"), getAllServicesAdmin);
+router.get("/my-services", verifyToken, authorize("Vendor"), getMyServices);
 router.get("/:id", getService);
 
 router.patch("/:id", verifyToken, authorize("Vendor"), updateServiceController);

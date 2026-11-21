@@ -46,6 +46,16 @@ export async function getAllServicesForAdmin() {
         .toArray();
 }
 
+// Get Own Services (Vendor)
+export async function getMyServicesForVendor(vendorId: string) {
+    const db = getDB();
+
+    return await db.collection("services")
+        .find({ vendorId })
+        .sort({ createdAt: -1 })
+        .toArray();
+}
+
 // Get Single Active Service
 export async function getSingleService(serviceId: ObjectId) {
     const db = getDB();

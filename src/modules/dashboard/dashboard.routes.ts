@@ -7,26 +7,9 @@ import { getAdminDashboardController } from "./dashboard.controller.js";
 
 const router = Router();
 
-router.get(
-    "/customer",
-    verifyToken,
-    authorize("Customer"),
-    getCustomerDashboardController
-);
-
-router.get(
-    "/vendor",
-    verifyToken,
-    authorize("Vendor"),
-    getVendorDashboardController
-);
-
-router.get(
-    "/admin",
-    verifyToken,
-    authorize("Admin"),
-    getAdminDashboardController
-);
+router.get("/customer",verifyToken,authorize("Customer"),getCustomerDashboardController);
+router.get("/vendor",verifyToken,authorize("Vendor"),getVendorDashboardController);
+router.get("/admin",verifyToken,authorize("Admin"),getAdminDashboardController);
 
 
 export default router;
