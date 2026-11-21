@@ -122,3 +122,21 @@ export async function getAllBookings() {
         .sort({ createdAt: -1 })
         .toArray();
 }
+
+// Admin Update Booking Status
+export async function adminUpdateBookingStatus(
+    bookingId: ObjectId,
+    status: "Pending" | "Confirmed" | "Rejected" | "Cancelled"
+) {
+    const db = getDB();
+
+    return await db.collection("bookings").updateOne(
+        { _id: bookingId },
+        {
+            $set: {
+                status,
+                updatedAt: new Date(),
+            },
+        }
+    );
+}

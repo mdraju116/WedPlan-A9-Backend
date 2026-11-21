@@ -7,6 +7,7 @@ import {
     updateBookingStatus,
     cancelBooking,
     getAllBookings,
+    adminUpdateBookingStatus,
 } from "./booking.service.js";
 
 // Create Booking
@@ -195,6 +196,59 @@ export async function getAllBookingsController(
             success: true,
             message: "All bookings retrieved successfully",
             data: bookings,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+
+// Admin Update Booking Status
+export async function adminUpdateBookingStatusController(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const id = req.params.id;
+        const { status } = req.body;
+
+        if (typeof id !== "string" || !ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid booking ID",
+            });
+        }
+
+        const allowedStatuses = [
+            "Pending",
+            "Confirmed",
+            "Rejected",
+            "Cancelled",
+        ];
+
+        if (!allowedStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid booking status",
+            });
+        }
+
+        const result = await adminUpdateBookingStatus(
+            new ObjectId(id),
+            status
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Booking status updated to ${status} successfully`,
         });
     } catch (error) {
         next(error);

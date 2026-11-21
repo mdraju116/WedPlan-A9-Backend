@@ -8,6 +8,7 @@ import {
     updateBookingStatusController,
     cancelBookingController,
     getAllBookingsController,
+     adminUpdateBookingStatusController,
 } from "./booking.controller.js";
 
 const router = Router();
@@ -56,4 +57,12 @@ router.get(
     authorize("Admin"),
     getAllBookingsController
 );
+
+router.patch(
+    "/:id/admin/status",
+    verifyToken,
+    authorize("Admin"),
+    adminUpdateBookingStatusController
+);
+
 export default router;
