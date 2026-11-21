@@ -4,11 +4,12 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import { ObjectId } from "mongodb";
 import { getDB } from "../config/db.js";
 
-const frontendURL =
-    process.env.NODE_ENV === "production"
-        ? process.env.FRONTEND_URL_VERCEL
-        : process.env.FRONTEND_URL_LOCAL;
+// const frontendURL =
+//     process.env.NODE_ENV === "production"
+//         ? process.env.FRONTEND_URL_VERCEL
+//         : process.env.FRONTEND_URL_LOCAL;
 
+const frontendURL =process.env.FRONTEND_URL_LOCAL;
 if (!frontendURL) {
     throw new Error("Frontend URL is not defined");
 }
