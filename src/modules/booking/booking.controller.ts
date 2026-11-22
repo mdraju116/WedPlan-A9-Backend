@@ -54,6 +54,16 @@ export async function createBookingController(
             data: booking,
         });
     } catch (error) {
+        if (
+            error instanceof Error &&
+            error.message.includes("free booking limit")
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
         next(error);
     }
 }

@@ -11,6 +11,34 @@ export async function createBooking(bookingData: {
 }) {
     const db = getDB();
 
+    // Check Customer Subscription
+    const customer = await db.collection("user").findOne({
+        _id: new ObjectId(bookingData.customerId),
+    });
+
+    if (!customer) {
+        throw new Error("Customer not found");
+    }
+
+    // Check Active Premium Subscription
+    const isPremium =
+        customer.subscriptionPlan === "Premium" &&
+        customer.subscriptionExpiresAt &&
+        new Date(customer.subscriptionExpiresAt) > new Date();
+
+    // Enforce Free Booking Limit
+    if (!isPremium) {
+        const totalBookings = await db.collection("bookings").countDocuments({
+            customerId: bookingData.customerId,
+        });
+
+        if (totalBookings >= 3) {
+            throw new Error(
+                "You have reached the free booking limit. Please upgrade to Premium for unlimited bookings."
+            );
+        }
+    }
+
     const service = await db.collection("services").findOne({
         _id: bookingData.serviceId,
         status: "Active",

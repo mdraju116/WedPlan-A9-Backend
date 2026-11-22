@@ -1,4 +1,3 @@
-
 import express from "express";
 import cors from "cors";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -8,30 +7,41 @@ import userRoutes from "./modules/user/user.routes.js";
 import serviceRoutes from "./modules/service/service.routes.js";
 import bookingRoutes from "./modules/booking/booking.routes.js";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
+import paymentRoutes from "./modules/payment/payment.routes.js";
 
 const app = express();
 
-// Middleware
-app.use(express.json());
+// CORS
+const allowedOrigins = [
+    process.env.FRONTEND_URL_LOCAL,
+    process.env.FRONTEND_URL_VERCEL,
+].filter((origin): origin is string => Boolean(origin));
 
 app.use(
-  cors({
-    origin: process.env.FRONTEND_URL_LOCAL,
-  })
+    cors({
+        origin: allowedOrigins,
+        credentials: true,
+    })
 );
+
+// Stripe webhook must come before express.json()
+app.use("/api/payments", paymentRoutes);
+
+// JSON Middleware
+app.use(express.json());
 
 // Root route
 app.get("/", (req, res) => {
-  res.send("Welcome to WedPlan Server!");
+    res.send("Welcome to WedPlan Server!");
 });
 
-//http://localhost:5000/api/users
+// API Routes
 app.use("/api/users", userRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
-
+// Error Handling
 app.use(notFound);
 app.use(errorHandler);
 
