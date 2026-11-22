@@ -17,12 +17,12 @@ export async function createBookingController(
     next: NextFunction
 ) {
     try {
-        const { serviceId, eventDate, message } = req.body;
+        const { serviceId, eventDate, eventLocation, message } = req.body;
 
-        if (!serviceId || !eventDate) {
+        if (!serviceId || !eventDate || typeof eventLocation !== "string" || !eventLocation.trim() || Number.isNaN(Date.parse(eventDate))) {
             return res.status(400).json({
                 success: false,
-                message: "Service ID and event date are required",
+                message: "Service ID, a valid event date, and event location are required",
             });
         }
 
@@ -38,6 +38,7 @@ export async function createBookingController(
             customerId: req.user!.id.toString(),
             customerName: req.user!.name,
             eventDate,
+            eventLocation: eventLocation.trim(),
             message,
         });
 
@@ -54,10 +55,11 @@ export async function createBookingController(
             data: booking,
         });
     } catch (error) {
-        if (
-            error instanceof Error &&
-            error.message.includes("free booking limit")
-        ) {
+        if (error instanceof Error && error.message.includes("active booking request already exists")) {
+            return res.status(409).json({ success: false, message: error.message });
+        }
+
+        if (error instanceof Error && error.message.includes("free booking limit")) {
             return res.status(403).json({
                 success: false,
                 message: error.message,
@@ -127,10 +129,10 @@ export async function updateBookingStatusController(
             });
         }
 
-        if (status !== "Confirmed" && status !== "Rejected") {
+        if (status !== "Accepted" && status !== "Rejected") {
             return res.status(400).json({
                 success: false,
-                message: "Status must be Confirmed or Rejected",
+                message: "Status must be Accepted or Rejected",
             });
         }
 
@@ -232,7 +234,7 @@ export async function adminUpdateBookingStatusController(
 
         const allowedStatuses = [
             "Pending",
-            "Confirmed",
+            "Accepted",
             "Rejected",
             "Cancelled",
         ];

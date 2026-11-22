@@ -8,13 +8,13 @@ export async function getCustomerDashboard(customerId: string) {
     const [
         totalBookings,
         pendingBookings,
-        confirmedBookings,
+        acceptedBookings,
         completedBookings,
         recentBookings,
     ] = await Promise.all([
         bookings.countDocuments({ customerId }),
         bookings.countDocuments({ customerId, status: "Pending" }),
-        bookings.countDocuments({ customerId, status: "Confirmed" }),
+        bookings.countDocuments({ customerId, status: { $in: ["Accepted", "Confirmed"] } }),
         bookings.countDocuments({ customerId, status: "Completed" }),
         bookings.find({ customerId })
             .sort({ createdAt: -1 })
@@ -26,7 +26,7 @@ export async function getCustomerDashboard(customerId: string) {
         stats: {
             totalBookings,
             pendingBookings,
-            confirmedBookings,
+            acceptedBookings,
             completedBookings,
         },
         recentBookings,
@@ -54,7 +54,7 @@ export async function getVendorDashboard(vendorId: string) {
             {
                 $match: {
                     vendorId,
-                    status: { $in: ["Confirmed", "Completed"] },
+                    status: { $in: ["Accepted", "Confirmed", "Completed"] },
                 },
             },
             {

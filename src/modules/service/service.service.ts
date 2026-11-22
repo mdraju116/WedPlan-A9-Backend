@@ -1,141 +1,76 @@
 import { ObjectId } from "mongodb";
 import { getDB } from "../../config/db.js";
 
-// Create Service
+type ServiceStatus = "Pending" | "Active" | "Inactive" | "Rejected";
+
 export async function createService(serviceData: {
-    title: string;
-    category: string;
-    price: number;
-    description: string;
-    image: string;
-    vendorId: string;
-    vendorName: string;
+    title: string; category: string; price: number; description: string;
+    image: string; images: string[]; location: string; vendorId: string; vendorName: string;
 }) {
     const db = getDB();
+    const vendor = await db.collection("user").findOne({ _id: new ObjectId(serviceData.vendorId) });
+    if (!vendor) throw new Error("Vendor not found");
 
-    // Check Vendor Subscription
-    const vendor = await db.collection("user").findOne({
-        _id: new ObjectId(serviceData.vendorId),
-    });
-
-    if (!vendor) {
-        throw new Error("Vendor not found");
-    }
-
-    // Check Active Premium Subscription
-    const isPremium =
-        vendor.subscriptionPlan === "Premium" &&
-        vendor.subscriptionExpiresAt &&
-        new Date(vendor.subscriptionExpiresAt) > new Date();
-
-    // Enforce Free Service Limit
+    const isPremium = vendor.subscriptionPlan === "Premium" && vendor.subscriptionExpiresAt && new Date(vendor.subscriptionExpiresAt) > new Date();
     if (!isPremium) {
-        const totalServices = await db.collection("services").countDocuments({
-            vendorId: serviceData.vendorId,
-        });
-
-        if (totalServices >= 3) {
-            throw new Error(
-                "You have reached the free service limit. Please upgrade to Premium to add more services."
-            );
-        }
+        const activeServices = await db.collection("services").countDocuments({ vendorId: serviceData.vendorId, status: "Active" });
+        if (activeServices >= 3) throw new Error("You have reached the free service limit. Please upgrade to Premium to publish more services.");
     }
 
-    const service = {
-        ...serviceData,
-        bookings: 0,
-        status: "Active",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-    };
-
+    const images = serviceData.images.length ? serviceData.images : [serviceData.image];
+    const service = { ...serviceData, images, image: images[0], bookings: 0, status: "Pending" as const, createdAt: new Date(), updatedAt: new Date() };
     const result = await db.collection("services").insertOne(service);
-
     return { _id: result.insertedId, ...service };
 }
 
-// Get All Active Services (Public)
 export async function getAllServices() {
-    const db = getDB();
-
-    return await db.collection("services")
-        .find({ status: "Active" })
-        .sort({ createdAt: -1 })
-        .toArray();
+    return await getDB().collection("services").find({ status: "Active" }).sort({ createdAt: -1 }).toArray();
 }
 
-// Get All Services (Admin)
 export async function getAllServicesForAdmin() {
-    const db = getDB();
-
-    return await db.collection("services")
-        .find({})
-        .sort({ createdAt: -1 })
-        .toArray();
+    return await getDB().collection("services").find({}).sort({ createdAt: -1 }).toArray();
 }
 
-// Get Own Services (Vendor)
 export async function getMyServicesForVendor(vendorId: string) {
-    const db = getDB();
-
-    return await db.collection("services")
-        .find({ vendorId })
-        .sort({ createdAt: -1 })
-        .toArray();
+    return await getDB().collection("services").find({ vendorId }).sort({ createdAt: -1 }).toArray();
 }
 
-// Get Single Active Service
 export async function getSingleService(serviceId: ObjectId) {
-    const db = getDB();
-
-    return await db.collection("services").findOne({
-        _id: serviceId,
-        status: "Active",
-    });
+    return await getDB().collection("services").findOne({ _id: serviceId, status: "Active" });
 }
 
-// Update Own Service
-export async function updateService(
-    serviceId: ObjectId,
-    vendorId: string,
-    updateData: {
-        title?: string;
-        category?: string;
-        price?: number;
-        description?: string;
-        image?: string;
-    }
-) {
-    const db = getDB();
-
-    return await db.collection("services").updateOne(
+export async function updateService(serviceId: ObjectId, vendorId: string, updateData: {
+    title?: string; category?: string; price?: number; description?: string;
+    image?: string; images?: string[]; location?: string;
+}) {
+    if (updateData.images?.length) updateData.image = updateData.images[0];
+    return await getDB().collection("services").updateOne(
         { _id: serviceId, vendorId },
-        { $set: { ...updateData, updatedAt: new Date() } }
+        { $set: { ...updateData, status: "Pending", updatedAt: new Date() } },
     );
 }
 
-// Delete Own Service
-export async function deleteService(
-    serviceId: ObjectId,
-    vendorId: string
-) {
-    const db = getDB();
-
-    return await db.collection("services").deleteOne({
-        _id: serviceId,
-        vendorId,
-    });
+export async function deleteService(serviceId: ObjectId, vendorId: string) {
+    return await getDB().collection("services").deleteOne({ _id: serviceId, vendorId });
 }
 
-// Admin Update Service Status
-export async function updateServiceStatus(
-    serviceId: ObjectId,
-    status: "Active" | "Inactive"
-) {
-    const db = getDB();
+export async function deleteServiceByAdmin(serviceId: ObjectId) {
+    return await getDB().collection("services").deleteOne({ _id: serviceId });
+}
 
-    return await db.collection("services").updateOne(
-        { _id: serviceId },
-        { $set: { status, updatedAt: new Date() } }
-    );
+export async function updateServiceStatus(serviceId: ObjectId, status: ServiceStatus) {
+    const db = getDB();
+    const service = await db.collection("services").findOne({ _id: serviceId }, { projection: { vendorId: 1 } });
+    if (!service) return { matchedCount: 0, modifiedCount: 0 };
+
+    if (status === "Active") {
+        const vendor = await db.collection("user").findOne({ _id: new ObjectId(service.vendorId) }, { projection: { subscriptionPlan: 1, subscriptionExpiresAt: 1 } });
+        const isPremium = vendor?.subscriptionPlan === "Premium" && vendor.subscriptionExpiresAt && new Date(vendor.subscriptionExpiresAt) > new Date();
+        if (!isPremium) {
+            const activeCount = await db.collection("services").countDocuments({ vendorId: service.vendorId, status: "Active", _id: { $ne: serviceId } });
+            if (activeCount >= 3) throw new Error("Vendor free service limit reached; service cannot be approved until a listing is deactivated or the vendor upgrades.");
+        }
+    }
+
+    return await db.collection("services").updateOne({ _id: serviceId }, { $set: { status, updatedAt: new Date() } });
 }

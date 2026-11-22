@@ -7,6 +7,7 @@ export async function createBooking(bookingData: {
     customerId: string;
     customerName: string;
     eventDate: string;
+    eventLocation: string;
     message?: string;
 }) {
     const db = getDB();
@@ -52,15 +53,25 @@ export async function createBooking(bookingData: {
         throw new Error("You cannot book your own service");
     }
 
+    const duplicate = await db.collection("bookings").findOne({
+        customerId: bookingData.customerId,
+        serviceId: service._id,
+        eventDate: bookingData.eventDate,
+        status: { $in: ["Pending", "Accepted", "Confirmed"] },
+    });
+    if (duplicate) throw new Error("An active booking request already exists for this service and date");
+
     const booking = {
         serviceId: service._id,
         serviceTitle: service.title,
         serviceImage: service.image,
+        serviceImages: service.images || (service.image ? [service.image] : []),
         vendorId: service.vendorId,
         vendorName: service.vendorName,
         customerId: bookingData.customerId,
         customerName: bookingData.customerName,
         eventDate: bookingData.eventDate,
+        eventLocation: bookingData.eventLocation,
         message: bookingData.message || "",
         amount: service.price,
         status: "Pending",
@@ -100,7 +111,7 @@ export async function getVendorBookingRequests(vendorId: string) {
 export async function updateBookingStatus(
     bookingId: ObjectId,
     vendorId: string,
-    status: "Confirmed" | "Rejected"
+    status: "Accepted" | "Rejected"
 ) {
     const db = getDB();
 
@@ -154,7 +165,7 @@ export async function getAllBookings() {
 // Admin Update Booking Status
 export async function adminUpdateBookingStatus(
     bookingId: ObjectId,
-    status: "Pending" | "Confirmed" | "Rejected" | "Cancelled"
+    status: "Pending" | "Accepted" | "Rejected" | "Cancelled"
 ) {
     const db = getDB();
 
