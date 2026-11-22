@@ -96,7 +96,9 @@ export async function getAdminDashboard() {
         totalCustomers,
         totalVendors,
         totalServices,
+        pendingServices,
         totalBookings,
+        pendingBookings,
         totalTransactions,
         recentBookings,
     ] = await Promise.all([
@@ -104,7 +106,9 @@ export async function getAdminDashboard() {
         users.countDocuments({ role: "Customer" }),
         users.countDocuments({ role: "Vendor" }),
         services.countDocuments({}),
+        services.countDocuments({ status: "Pending" }),
         bookings.countDocuments({}),
+        bookings.countDocuments({ status: "Pending" }),
         transactions.countDocuments({}),
         bookings.find({})
             .sort({ createdAt: -1 })
@@ -118,7 +122,9 @@ export async function getAdminDashboard() {
             totalCustomers,
             totalVendors,
             totalServices,
+            pendingServices,
             totalBookings,
+            pendingBookings,
             totalTransactions,
         },
         recentBookings,

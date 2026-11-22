@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 import Stripe from "stripe";
 import { getDB } from "../../config/db.js";
 import { stripe } from "../../config/stripe.js";
-import { getTransactions, getUserIdByStripeCustomerId, recordPremiumTransaction, updateTransactionStatus, updateUserSubscription } from "./payment.service.js";
+import { getTransactions, getUserIdByStripeCustomerId, recordPaidSubscriptionInvoices, syncTransactionsForKnownSubscriptions, updateTransactionStatus, updateUserSubscription } from "./payment.service.js";
 
 export async function handleStripeWebhook(req: Request, res: Response) {
     const signature = req.headers["stripe-signature"];
@@ -27,7 +27,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
                 const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription.id;
                 const subscription = await stripe.subscriptions.retrieve(subscriptionId);
                 await updateUserSubscription(userId, subscription);
-                await recordPremiumTransaction({ userId, email: session.customer_details?.email || session.customer_email, session, subscriptionId, status: subscription.status === "active" || subscription.status === "trialing" ? "paid" : subscription.status });
+                await recordPaidSubscriptionInvoices({ userId, email: session.customer_details?.email || session.customer_email, subscriptionId });
                 break;
             }
             case "customer.subscription.updated":
@@ -84,12 +84,10 @@ export async function confirmCheckoutSession(req: Request, res: Response, next: 
         if (update.matchedCount === 0) {
             return res.status(404).json({ success: false, message: "Vendor account was not found" });
         }
-        await recordPremiumTransaction({
+        await recordPaidSubscriptionInvoices({
             userId: sessionUserId,
             email: session.customer_details?.email || session.customer_email,
-            session,
             subscriptionId,
-            status: "paid",
         });
 
         return res.status(200).json({ success: true, message: "Premium subscription activated" });
@@ -113,6 +111,7 @@ export async function refreshVendorSubscription(req: Request, res: Response, nex
             if (result.matchedCount === 0) {
                 return res.status(404).json({ success: false, message: "Vendor account was not found" });
             }
+            await recordPaidSubscriptionInvoices({ userId, email: req.user!.email, subscriptionId: subscription.id });
             return res.status(200).json({ success: true, message: "Active subscription refreshed" });
         }
 
@@ -124,6 +123,7 @@ export async function refreshVendorSubscription(req: Request, res: Response, nex
 
 export async function getTransactionsController(_req: Request, res: Response, next: NextFunction) {
     try {
+        await syncTransactionsForKnownSubscriptions();
         const transactions = await getTransactions();
         return res.status(200).json({ success: true, message: "Transactions retrieved successfully", data: transactions });
     } catch (error) { next(error); }
