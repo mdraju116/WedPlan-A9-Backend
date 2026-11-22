@@ -33,10 +33,9 @@ export async function recordPaidSubscriptionInvoices(input: { userId: string; em
         }
 
         await transactions.updateOne(
-            { _id: invoice.id },
+            { stripeInvoiceId: invoice.id },
             {
                 $setOnInsert: {
-                    _id: invoice.id,
                     vendorId: input.userId,
                     vendorEmail: input.email || "",
                     plan: "Premium",
