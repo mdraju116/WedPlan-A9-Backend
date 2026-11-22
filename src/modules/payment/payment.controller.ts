@@ -1,7 +1,11 @@
+
 import { Request, Response } from "express";
 import Stripe from "stripe";
 import { stripe } from "../../config/stripe.js";
-import { updateUserSubscription } from "./payment.service.js";
+import {
+    updateUserSubscription,
+    getUserIdByStripeCustomerId,
+} from "./payment.service.js";
 
 export async function handleStripeWebhook(
     req: Request,
@@ -39,15 +43,21 @@ export async function handleStripeWebhook(
             case "checkout.session.completed": {
                 const session = event.data.object as Stripe.Checkout.Session;
 
-                if (session.mode !== "subscription" || !session.subscription) {
+                if (
+                    session.mode !== "subscription" ||
+                    !session.subscription
+                ) {
                     break;
                 }
 
                 const userId =
-                    session.metadata?.userId || session.client_reference_id;
+                    session.metadata?.userId ||
+                    session.client_reference_id;
 
                 if (!userId) {
-                    throw new Error("User ID not found in checkout session");
+                    throw new Error(
+                        "User ID not found in checkout session"
+                    );
                 }
 
                 const subscriptionId =
@@ -55,29 +65,32 @@ export async function handleStripeWebhook(
                         ? session.subscription
                         : session.subscription.id;
 
-                const subscription = await stripe.subscriptions.retrieve(
-                    subscriptionId
-                );
+                const subscription =
+                    await stripe.subscriptions.retrieve(subscriptionId);
 
                 await updateUserSubscription(userId, subscription);
-
                 break;
             }
 
             case "customer.subscription.updated":
             case "customer.subscription.deleted": {
                 const subscription = event.data.object as Stripe.Subscription;
-                const userId = subscription.metadata?.userId;
+
+                const customerId =
+                    subscription.customer.toString();
+
+                const userId =
+                    subscription.metadata?.userId ||
+                    await getUserIdByStripeCustomerId(customerId);
 
                 if (!userId) {
                     console.warn(
-                        `Ignoring subscription ${subscription.id}: userId metadata not found`
+                        `Ignoring subscription ${subscription.id}: user not found`
                     );
                     break;
                 }
 
                 await updateUserSubscription(userId, subscription);
-
                 break;
             }
 

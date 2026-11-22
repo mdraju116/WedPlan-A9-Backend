@@ -43,6 +43,16 @@ export async function createServiceController(
             data: service,
         });
     } catch (error) {
+        if (
+            error instanceof Error &&
+            error.message.includes("free service limit")
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
         next(error);
     }
 }

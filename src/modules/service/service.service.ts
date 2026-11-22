@@ -13,6 +13,34 @@ export async function createService(serviceData: {
 }) {
     const db = getDB();
 
+    // Check Vendor Subscription
+    const vendor = await db.collection("user").findOne({
+        _id: new ObjectId(serviceData.vendorId),
+    });
+
+    if (!vendor) {
+        throw new Error("Vendor not found");
+    }
+
+    // Check Active Premium Subscription
+    const isPremium =
+        vendor.subscriptionPlan === "Premium" &&
+        vendor.subscriptionExpiresAt &&
+        new Date(vendor.subscriptionExpiresAt) > new Date();
+
+    // Enforce Free Service Limit
+    if (!isPremium) {
+        const totalServices = await db.collection("services").countDocuments({
+            vendorId: serviceData.vendorId,
+        });
+
+        if (totalServices >= 3) {
+            throw new Error(
+                "You have reached the free service limit. Please upgrade to Premium to add more services."
+            );
+        }
+    }
+
     const service = {
         ...serviceData,
         bookings: 0,

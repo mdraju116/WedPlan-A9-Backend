@@ -36,3 +36,17 @@ export async function updateUserSubscription(
         }
     );
 }
+
+
+export async function getUserIdByStripeCustomerId(
+    customerId: string
+) {
+    const db = getDB();
+
+    const user = await db.collection("user").findOne(
+        { stripeCustomerId: customerId },
+        { projection: { _id: 1 } }
+    );
+
+    return user?._id?.toString() || null;
+}
