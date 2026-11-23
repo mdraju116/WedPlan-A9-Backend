@@ -82,7 +82,7 @@ export async function confirmCheckoutSession(req: Request, res: Response, next: 
 
         const update = await updateUserSubscription(sessionUserId, subscription);
         if (update.matchedCount === 0) {
-            return res.status(404).json({ success: false, message: "Vendor account was not found" });
+            return res.status(404).json({ success: false, message: "User account was not found" });
         }
         await recordPaidSubscriptionInvoices({
             userId: sessionUserId,
@@ -129,13 +129,56 @@ export async function getTransactionsController(_req: Request, res: Response, ne
     } catch (error) { next(error); }
 }
 
+let readOnlyBillingPortalConfigurationId: string | undefined;
+let readOnlyBillingPortalConfigurationPromise: Promise<string> | undefined;
+
+async function getReadOnlyBillingPortalConfigurationId(returnUrl: string) {
+    if (readOnlyBillingPortalConfigurationId) return readOnlyBillingPortalConfigurationId;
+
+    if (!readOnlyBillingPortalConfigurationPromise) {
+        readOnlyBillingPortalConfigurationPromise = (async () => {
+            const configurations = await stripe.billingPortal.configurations.list({ active: true, limit: 100 });
+            const existing = configurations.data.find((configuration) => configuration.metadata?.wedplan_read_only_portal === "true");
+            if (existing) return existing.id;
+
+            const configuration = await stripe.billingPortal.configurations.create({
+                name: "WedPlan subscription details",
+                default_return_url: returnUrl,
+                features: {
+                    customer_update: { enabled: false },
+                    invoice_history: { enabled: true },
+                    payment_method_update: { enabled: false },
+                    subscription_cancel: { enabled: false },
+                    subscription_pause: { enabled: false },
+                    subscription_update: { enabled: false },
+                },
+                metadata: { wedplan_read_only_portal: "true" },
+            });
+            return configuration.id;
+        })();
+    }
+
+    try {
+        readOnlyBillingPortalConfigurationId = await readOnlyBillingPortalConfigurationPromise;
+        return readOnlyBillingPortalConfigurationId;
+    } catch (error) {
+        readOnlyBillingPortalConfigurationPromise = undefined;
+        throw error;
+    }
+}
+
 export async function createSubscriptionPortalSession(req: Request, res: Response, next: NextFunction) {
     try {
         const user = await getDB().collection("user").findOne({ _id: new ObjectId(req.user!.id.toString()) }, { projection: { stripeCustomerId: 1 } });
         if (!user?.stripeCustomerId) return res.status(400).json({ success: false, message: "No Stripe subscription is linked to this account" });
         const returnUrl = process.env.FRONTEND_URL_VERCEL || process.env.FRONTEND_URL_LOCAL;
         if (!returnUrl) return res.status(500).json({ success: false, message: "Frontend URL is not configured" });
-        const portal = await stripe.billingPortal.sessions.create({ customer: user.stripeCustomerId, return_url: `${returnUrl}/dashboard/vendor/subscription` });
+        const configuration = await getReadOnlyBillingPortalConfigurationId(returnUrl);
+        const portal = await stripe.billingPortal.sessions.create({
+            customer: user.stripeCustomerId,
+            configuration,
+            return_url: returnUrl + (req.user!.role === "Customer" ? "/dashboard/customer/subscription" : "/dashboard/vendor/subscription"),
+        });
         return res.status(200).json({ success: true, data: { url: portal.url } });
     } catch (error) { next(error); }
 }

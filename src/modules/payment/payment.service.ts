@@ -56,7 +56,7 @@ export async function recordPaidSubscriptionInvoices(input: { userId: string; em
 
 export async function syncTransactionsForKnownSubscriptions() {
     const vendors = await getDB().collection("user")
-        .find({ role: "Vendor", stripeSubscriptionId: { $type: "string" } })
+        .find({ role: { $in: ["Vendor", "Customer"] }, stripeSubscriptionId: { $type: "string" } })
         .project<{ _id: ObjectId; email?: string; stripeSubscriptionId: string }>({ _id: 1, email: 1, stripeSubscriptionId: 1 })
         .toArray();
 

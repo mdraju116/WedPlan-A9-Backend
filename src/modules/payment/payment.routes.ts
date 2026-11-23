@@ -6,9 +6,9 @@ import { confirmCheckoutSession, createSubscriptionPortalSession, getTransaction
 
 const router = Router();
 router.post("/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
-router.post("/confirm", verifyToken, authorize("Vendor"), confirmCheckoutSession);
-router.post("/refresh-subscription", verifyToken, authorize("Vendor"), refreshVendorSubscription);
+router.post("/confirm", verifyToken, authorize("Vendor", "Customer"), confirmCheckoutSession);
+router.post("/refresh-subscription", verifyToken, authorize("Vendor", "Customer"), refreshVendorSubscription);
 router.get("/transactions", verifyToken, authorize("Admin"), getTransactionsController);
-router.post("/portal", verifyToken, authorize("Vendor"), createSubscriptionPortalSession);
+router.post("/portal", verifyToken, authorize("Vendor", "Customer"), createSubscriptionPortalSession);
 
 export default router;
