@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { connectDB } from "./config/db.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { notFound } from "./middlewares/notFound.js";
 
@@ -23,6 +24,16 @@ app.use(
         credentials: true,
     })
 );
+
+// Ensure the database is ready for both Vercel and the local server entrypoint.
+app.use(async (_req, _res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
 
 // Stripe webhook must come before express.json()
 app.use("/api/payments", paymentRoutes);
